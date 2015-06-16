@@ -1,6 +1,6 @@
 # MEAN.IO (2/3)
 
-Ce second article d'une série consacrée à MEAN.IO va nous permettre d'introduire les principaux concepts permettant de créer un nouveau module afin d'étendre le canevas. Le cas d'application que je vous propose d'étudier permettra également à la plupart d'entre vous de découvrir un autre domaine, celui de la visualisation de données géographiques sous forme de carte ou sous forme 3D. 
+Ce second article d'une série consacrée à MEAN.IO va nous permettre d'introduire les principaux concepts permettant de créer un nouveau module afin d'étendre le canevas. Le cas d'application que je vous propose d'étudier permettra également à la plupart d'entre vous de découvrir un autre domaine, celui de la visualisation de données géographiques sous forme de carte ou sous forme 3D. Nous souhaitons en effet créer une application permettant de visualiser un ou plusieurs itinéraires GPS (type randonnée VTT ou pédestre).
 
 ## Création d'un module
 
@@ -47,23 +47,52 @@ var Application = new Module('application');
 Application.register(function(app, auth, database) {
   // Déclaration automatique des routes du sous-dossier routes
   Application.routes(app, auth, database);
-  // Aggrégation des dépendances front-end
+  // Aggrégation des dépendances front-end (voir article précédent)
   Application.aggregateAsset('css', 'application.css');
 
   return Application;
 });
 ```
-Si votre nouveau module dépend d'autres modules MEAN.IO ou AngularJS il vous faudra rajouter ceci :
+Si votre nouveau module dépend d'autres modules MEAN.IO ou AngularJS il vous faudra rajouter ceci lors du register :
 ```
 Application.angularDependencies(['mean.users']);
 ```
 En effet l'arbre des dépendances est construit côté serveur au lancement de l'application et est récupéré au chargement de la page via une requête sur l'URL */_getModules* côté client. Ceci permet de déclarer alors dynamiquement la liste de tous les modules AngularJS dans le code JS (pour les curieux vois le fichier **bower_components/web-bootstrap/index.js**).
 
+Par défaut MEAN.IO injecte trois dépendances en paramètre du register :
+
+  - **app** : l'application Express,
+  - **auth** : un module proposant des fonctions d'authenticatio basiques,
+  - **database** : la connexion Mongoose à la base de données.
+ 
+Si votre module dépend d'autres modules (e.g. module1 et module2) ils pourront être injectés à la suite :
+```
+...
+// Enregistrement du module
+Application.register(function(app, auth, database, module1, module2) {
+  ...
+});
+```
+
 ## Partie serveur (back-end)
 
 ### Création du modèle
 
+Le premier travail lors de la création d'un module consiste à définir le modèle conceptuel du ou des objets qui seront manipulés par le module, ce modèle est ensuite exprimé au moyen d'un schéma Mongoose. Dans notre cas l'objet manipulé sera un itinéraire GPS (GPS route en anglais).
+
+Pour créer le modèle il suffit de créer un fichier **RouteModel.js** dans le dossier **models** du module, il contiendra le schéma
+
 ### Création des routes
+
+Une fois le(s) modèle(s) créé(s), la seconde étape consiste à définir l'API qui permettra de le(s) manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction).
+
+### Test de l'API
+
+Afin de tester l'API j'utilise l'extension Chrome [Postman](https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en). Cet outil permet d'envoyer des requêtes HTTP selon tout type de méthode (GET, POST, PUT, DELETE, etc.) et de créer des collections de templates de requête afin de pouvoir faire des tests rapides sur une API de type REST. Pour pouvoir l'utiliser avec MEAN.IO il faut tout d'abord récupérer un token JWT (voir article précédent) qui devra être adjoint à toutes les requêtes faites vers l'API. Pour cela le plus simple est de créer une requête de type POST vers l'URL */api/login* avec une charge utile (i.e. un body) contenant l'e-mail et le mot de passe de l'utilisateur de l'application préalablement créé (Figure 1). La réponse renvoyé contient votre token (Figure 2). Il faudra ensuite introduire ce token dans le header de vos prochaines requêtes en respectant le standard [Bearer](http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html). Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une réponse de status 200 ('OK') avec la charge utile `[]` (puisque nous n'avons créé aucun chemin à ce stade). Sans le token une réponse de status 401 ('User is not authorized') aurait été obtenue.
+
+![Figure 1](Figure1.png "Figure 1 : configuration de la requête de login à l'API dans Postman")
+![Figure 2](Figure2.png "Figure 2 : réponse de la requête de login à l'API contenant le token de l'utilisateur")
+![Figure 3](Figure3.png "Figure 3 : configuration d'une requête à l'API pour inclure le token dans Postman")
 
 ### Création du menu
 
