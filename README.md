@@ -39,7 +39,7 @@ Module folder
 > **Trucs & Astuces** : Tous les fichiers à l'intérieur du dossier **public** seront accessibles publiquement à l'URL */nom-module/chemin-relatif-fichier*. Par exemple pour accéder à une image nommé 'logo.png' dans le module nommé 'module' l'URL sera *module/assets/img/logo.png*.
 
 A la racine on trouvera comme dans le cas de l'application les fichiers de configuration pour npm, bower et MEAN.IO (**mean.json**). Le plus important est le fichier **app.js** qui est le point d'entrée du module, à l'intérieur est réalisé l'enregistrement du module dans MEAN.IO. Créons un nouveau module nommé 'application' qui contiendra notre logique applicative, dans le fichier **app.js** généré par défaut nous trouverons ceci :
-```
+```javascript
 var Module = require('meanio').Module;
 // Création du module, ceci va automatiquement charger tous les modèles du sous-dossier models
 var Application = new Module('application');
@@ -54,7 +54,7 @@ Application.register(function(app, auth, database) {
 });
 ```
 Si votre nouveau module dépend d'autres modules MEAN.IO ou AngularJS il vous faudra rajouter ceci lors du register :
-```
+```javascript
 Application.angularDependencies(['mean.users']);
 ```
 En effet l'arbre des dépendances est construit côté serveur au lancement de l'application et est récupéré au chargement de la page via une requête sur l'URL */_getModules* côté client. Ceci permet de déclarer alors dynamiquement la liste de tous les modules AngularJS dans le code JS (pour les curieux vois le fichier **bower_components/web-bootstrap/index.js**).
@@ -66,7 +66,7 @@ Par défaut MEAN.IO injecte trois dépendances en paramètre du register :
   - **database** : la connexion Mongoose à la base de données.
  
 Si votre module dépend d'autres modules (e.g. module1 et module2) ils pourront être injectés à la suite :
-```
+```javascript
 ...
 // Enregistrement du module
 Application.register(function(app, auth, database, module1, module2) {
