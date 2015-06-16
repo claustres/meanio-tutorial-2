@@ -78,9 +78,7 @@ Application.register(function(app, auth, database, module1, module2) {
 
 ### Création du modèle
 
-Le premier travail lors de la création d'un module consiste à définir le modèle conceptuel du ou des objets qui seront manipulés par le module, ce modèle est ensuite exprimé au moyen d'un schéma Mongoose. Dans notre cas l'objet manipulé sera un itinéraire GPS ('track' en anglais).
-
-Pour créer le modèle il suffit de créer un fichier **TrackModel.js** dans le dossier **models** du module, il contiendra le schéma suivant :
+Le premier travail lors de la création d'un module consiste à définir le modèle conceptuel du ou des objets qui seront manipulés par le module, ce modèle est ensuite exprimé au moyen d'un schéma Mongoose. Dans notre cas l'objet manipulé sera un itinéraire GPS ('track' en anglais). Un tel chemin est simplement décrit par une liste de positions GPS acquises par le capteur. Chaque point est repéré en coordonnées géographiques : longitude, latitude et altitue. A part l'utilisateur qui l'a créé et un descriptif le chemin contiendra donc un tableau de coordonnées. Pour déclarer le modèle il suffit de créer un fichier **TrackModel.js** dans le dossier **models** du module, il contiendra le schéma suivant :
 ```javascript
 'use strict';
 
@@ -107,7 +105,8 @@ var TrackSchema = new mongoose.Schema({
 TrackSchema.path('description').validate(function(description) {
   return !!description;
 }, 'Description cannot be blank');
-// Méthode utilisée pour récupérer un chemin via son ID
+// Méthode utilisée pour récupérer un chemin via son ID,
+// va récupérer certaines des informations de l'utilisateur via populate
 TrackSchema.statics.get = function(id, cb) {
   this.findOne({
     _id: id
@@ -119,7 +118,7 @@ mongoose.model('Track', TrackSchema);
 
 ### Création des routes
 
-Une fois le(s) modèle(s) créé(s), la seconde étape consiste à définir l'API qui permettra de le(s) manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction).
+Une fois le modèle créé, la seconde étape consiste à définir l'API qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellemnt d'autres opérations plus spécifiques à votre modèle. 
 
 ### Test de l'API
 
