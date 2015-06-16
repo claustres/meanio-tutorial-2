@@ -78,9 +78,44 @@ Application.register(function(app, auth, database, module1, module2) {
 
 ### Création du modèle
 
-Le premier travail lors de la création d'un module consiste à définir le modèle conceptuel du ou des objets qui seront manipulés par le module, ce modèle est ensuite exprimé au moyen d'un schéma Mongoose. Dans notre cas l'objet manipulé sera un itinéraire GPS (GPS route en anglais).
+Le premier travail lors de la création d'un module consiste à définir le modèle conceptuel du ou des objets qui seront manipulés par le module, ce modèle est ensuite exprimé au moyen d'un schéma Mongoose. Dans notre cas l'objet manipulé sera un itinéraire GPS ('track' en anglais).
 
-Pour créer le modèle il suffit de créer un fichier **RouteModel.js** dans le dossier **models** du module, il contiendra le schéma
+Pour créer le modèle il suffit de créer un fichier **TrackModel.js** dans le dossier **models** du module, il contiendra le schéma suivant :
+```javascript
+'use strict';
+
+var mongoose = require('mongoose'),
+    Schema = mongoose.Schema;
+
+// Déclaration du schéma du modèle 'Track'
+var TrackSchema = new mongoose.Schema({
+  // Utilisateur ayant créé le chemin
+  user : {
+  	type: mongoose.Schema.Types.ObjectId,
+  	ref: 'User' // Référence le modèle d'utilisateur de MEAN.IO
+  },
+  // Description associée au chemin
+  description : {
+  	type : String, required : true
+  },
+  // Liste des points de passage constituant le chemin (coordonnées géographiques)
+  waypoints : {
+  	type : [Number], required : false
+  }
+});
+// Ajout d'une fonction de validation pour la description
+TrackSchema.path('description').validate(function(description) {
+  return !!description;
+}, 'Description cannot be blank');
+// Méthode utilisée pour récupérer un chemin via son ID
+TrackSchema.statics.get = function(id, cb) {
+  this.findOne({
+    _id: id
+  }).populate('user', 'name username').exec(cb);
+};
+
+mongoose.model('Track', TrackSchema);
+```
 
 ### Création des routes
 
