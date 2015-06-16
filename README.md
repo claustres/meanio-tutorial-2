@@ -120,6 +120,37 @@ mongoose.model('Track', TrackSchema);
 
 Une fois le modèle créé, la seconde étape consiste à définir l'API qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellemnt d'autres opérations plus spécifiques à votre modèle. 
 
+```javascript
+'use strict';
+
+// Récupération du contrôleur
+var track = require('../controllers/TrackController');
+
+// Fonction pour vérifier les droits d'accès à l'API
+var hasAuthorization = function(req, res, next) {
+  // Un utilisateur ne peut modifier que ses propres chemins 
+  if (!req.track.user._id.equals(req.user._id)) {
+    return res.status(401).send('User is not authorized');
+  }
+  next();
+};
+
+module.exports = function(Application, app, auth, database) {
+    // Déclaration des routes
+    app.route('/api/track')
+        .get(auth.requiresLogin, track.list)
+        .post(auth.requiresLogin, track.create);
+    app.route('/api/track/count')
+        .get(auth.requiresLogin, track.count);
+    app.route('/api/track/:trackId')
+        .get(auth.isMongoId, auth.requiresLogin, track.get)
+        .put(auth.isMongoId, auth.requiresLogin, hasAuthorization, track.update)
+        .delete(auth.isMongoId, auth.requiresLogin, hasAuthorization, track.destroy);
+
+    app.param('trackId', track.findById);
+};
+```
+
 ### Test de l'API
 
 Afin de tester l'API j'utilise l'extension Chrome [Postman](https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en). Cet outil permet d'envoyer des requêtes HTTP selon tout type de méthode (GET, POST, PUT, DELETE, etc.) et de créer des collections de templates de requête afin de pouvoir faire des tests rapides sur une API de type REST. Pour pouvoir l'utiliser avec MEAN.IO il faut tout d'abord récupérer un token JWT (voir article précédent) qui devra être adjoint à toutes les requêtes faites vers l'API. Pour cela le plus simple est de créer une requête de type POST vers l'URL */api/login* avec une charge utile (i.e. un body) contenant l'e-mail et le mot de passe de l'utilisateur de l'application préalablement créé (Figure 1).
@@ -141,6 +172,8 @@ Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une répo
 ### Service
 
 ### Contrôleur
+
+### Routes
 
 ### Vues
 
