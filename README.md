@@ -4,7 +4,7 @@ Ce second article d'une série consacrée à MEAN.IO va nous permettre d'introdu
 
 ## Création d'un module
 
-Tout d'abord un petit rappel, l'ensemble des modules d'une application MEAN.IO est stocké dans le dossier **packages**. Le premier sous-dossier **core** inclut les modules de base livrés avec le framework et le sous-dossier **custom** les modules spécifiques à la logique applicative, c'est donc ici qu'il faudra créer vos nouveaux modules. Grâce à l'outil en ligne de commande [mean-cli](https://www.npmjs.com/package/mean-cli) il est possible d'initialiser un package (scaffolding) via :
+Tout d'abord un petit rappel, l'ensemble des modules d'une application MEAN.IO est stocké dans le dossier **packages**. Le premier sous-dossier **core** inclut les modules de base livrés avec le framework et le sous-dossier **custom** les modules spécifiques à la logique applicative, c'est donc ici qu'il faudra créer vos nouveaux modules. Grâce à l'outil en ligne de commande [mean-cli](https://www.npmjs.com/package/mean-cli) il est possible d'initialiser un module (scaffolding) via :
 ```
 mean package package_name
 ```
@@ -16,13 +16,14 @@ mean list
 mean uninstall package_name
 ```
 
-le dossier d'un package ou module MEAN.IO présente la structure suivante :
+Le dossier d'un module MEAN.IO présente la structure suivante (un module nouvellement créé peut ne pas contenir tous les dossiers néanmoins) :
 ```
 Module folder
 --- docs : contient la documentation de l'API (back-end)
 --- public : partie publique du module sur le site
     --- assets : données statiques (images, css, dépendances front-end)
     --- controllers : controllers front-end (AngularJS)
+    --- directives : directives front-end (AngularJS)
     --- routes : routing front-end (AngularUI Router)
     --- services : services front-end (AngularJS)
     --- tests : tests front-end (Jasmine)
@@ -35,10 +36,28 @@ Module folder
     --- views : vues HMTL (templating Swig)
 --- node_modules : contient les dépendances Node.js du module (back-end)
 ```
+> **Trucs & Astuces** : Tous les fichiers à l'intérieur du dossier **public** seront accessibles publiquement à l'URL */nom-module/chemin-relatif-fichier*. Par exemple pour accéder à une image nommé 'logo.png' dans le module nommé 'module' l'URL sera *module/assets/img/logo.png*.
 
-A la racine on trouve comme dans le cas de l'application les fichiers de configuration pour npm, bower et MEAN.IO (**mean.json**). Le plus important est le fichier **app.js** qui est le point d'entrée du module. Tous les fichiers à l'intérieur du dossier **public** seront accessibles publiquement à l'URL */nom-module/chemin-relatif-fichier*. Par exemple pour accéder à un contrôleur AngularJS nommé 'controller' dans le module nommé 'module' l'URL sera *module/controllers/controller.js*.
+A la racine on trouvera comme dans le cas de l'application les fichiers de configuration pour npm, bower et MEAN.IO (**mean.json**). Le plus important est le fichier **app.js** qui est le point d'entrée du module, à l'intérieur est réalisé l'enregistrement du module dans MEAN.IO. Créons un nouveau module nommé 'application' qui contiendra notre logique applicative, dans le fichier **app.js** généré par défaut nous trouverons ceci :
+```
+var Module = require('meanio').Module;
+// Création du module, ceci va automatiquement charger tous les modèles du sous-dossier models
+var Application = new Module('application');
+// Enregistrement du module
+Application.register(function(app, auth, database) {
+  // Déclaration automatique des routes du sous-dossier routes
+  Application.routes(app, auth, database);
+  // Aggrégation des dépendances front-end
+  Application.aggregateAsset('css', 'application.css');
 
-Pour rajouter un module au canevas il suffit de lui donner un nom unique dans l'application et de le copier dans le répertoire **packages/custom** de l'application, MEAN.IO se charge du reste !
+  return Application;
+});
+```
+Si votre nouveau module dépend d'autres modules MEAN.IO ou AngularJS il vous faudra rajouter ceci :
+```
+Application.angularDependencies(['mean.users']);
+```
+En effet l'arbre des dépendances est construit côté serveur au lancement de l'application et est récupéré au chargement de la page via une requête sur l'URL */_getModules* côté client. Ceci permet de déclarer alors dynamiquement la liste de tous les modules AngularJS dans le code JS (pour les curieux vois le fichier **bower_components/web-bootstrap/index.js**).
 
 ## Partie serveur (back-end)
 
