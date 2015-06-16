@@ -118,8 +118,7 @@ mongoose.model('Track', TrackSchema);
 
 ### Création des routes
 
-Une fois le modèle créé, la seconde étape consiste à définir l'API qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellemnt d'autres opérations plus spécifiques à votre modèle. 
-
+Une fois le modèle créé, la seconde étape consiste à définir l'API qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellemnt d'autres opérations plus spécifiques à votre modèle. Une route consiste à associer un point d'entrée de l'API (i.e. une URL avec une méthode HTTP) à la fonction de traitement JavaScript associée au sein d'un contrôleur. Pour déclarer les routes il suffit donc de créer un fichier **TrackRoutes.js** dans le dossier **routes** du module, il contiendra le code suivant :
 ```javascript
 'use strict';
 
@@ -150,6 +149,7 @@ module.exports = function(Application, app, auth, database) {
     app.param('trackId', track.findById);
 };
 ```
+On note l'ajout d'une fonction d'autorisation spécifique à notre modèle car seul l'utilisateur qui a créé un chemin est autorisé à le modifier. On notera également l'appel à des fonctions de vérification d'authentification de l'utilisateur ou de validité de l'identifiant d'un chemin qui sont fournies par MEAN.IO.
 
 ### Test de l'API
 
@@ -161,7 +161,7 @@ La réponse renvoyé contient votre token (Figure 2). Il faudra ensuite introdui
 
 ![Figure 2](Figure2.png "Figure 2 : réponse de la requête de login à l'API contenant le token de l'utilisateur")
 
-Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une réponse de status 200 ('OK') avec la charge utile `[]` (puisque nous n'avons créé aucun chemin à ce stade). Sans le token une réponse de status 401 ('User is not authorized') aurait été obtenue.
+Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une réponse de status 200 ('OK') avec la charge utile `[]` (puisque nous n'avons créé aucun chemin à ce stade). Sans le token une réponse de status 401 ('User is not authorized') aurait été obtenue. Vous pouvez essayer de créer un chemin à la main en fournissant simplement un descriptif dans le corps de votre requête POST sur */api/track* puisque l'utilisateur sera automatiquement renseigné et que les coordonnées ne sont pas requises pour l'example.
 
 ![Figure 3](Figure3.png "Figure 3 : configuration d'une requête à l'API pour inclure le token dans Postman")
 
