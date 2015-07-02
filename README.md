@@ -94,6 +94,17 @@ var TrackSchema = new mongoose.Schema({
   	type: mongoose.Schema.Types.ObjectId,
   	ref: 'User' // Référence le modèle d'utilisateur de MEAN.IO
   },
+  // Date de création
+  created: {
+    type: Date,
+    default: Date.now
+  },
+  // Titre du chemin
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
   // Description associée au chemin
   description : {
   	type : String, required : true
@@ -103,13 +114,16 @@ var TrackSchema = new mongoose.Schema({
   	type : [Number], required : false
   }
 });
-// Ajout d'une fonction de validation pour la description
+// Ajout d'une fonction de validation pour le titre et la description
+TrackSchema.path('title').validate(function(title) {
+  return !!title;
+}, 'Title cannot be blank');
 TrackSchema.path('description').validate(function(description) {
   return !!description;
 }, 'Description cannot be blank');
 // Méthode utilisée pour récupérer un chemin via son ID,
 // va récupérer certaines des informations de l'utilisateur via populate
-TrackSchema.statics.get = function(id, cb) {
+TrackSchema.statics.getById = function(id, cb) {
   this.findOne({
     _id: id
   }).populate('user', 'name username').exec(cb);
@@ -169,6 +183,21 @@ Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une répo
 
 ### Création du menu
 
+Pour rajouter des entrées dans la barre de menu de MEAN.IO il suffit de les déclarer dans votre **app.js** en précisant pour chacune le titre, les rôles autorisés à la voir et l'état à activer côté client (voir ci-après dans la partie cliente) :
+```javascript
+// Ajout des entrées de menu pour les utilisateurs authentifiés
+Application.menus.add({
+    'roles': ['authenticated'],
+    'title': 'Tracks',
+    'link': 'list tracks'
+});
+Application.menus.add({
+    'roles': ['authenticated'],
+    'title': 'New Track',
+    'link': 'create track'
+});
+```
+
 ## Partie cliente (front-end)
 
 ### Service
@@ -179,16 +208,4 @@ Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une répo
 
 ### Vues
 
-## Contribuer
 
-La société qui a lancé MEAN.IO (Linnovate) a également déployé une infrastructure afin de permettre à la communauté de partager et de mettre à disposition des modules, il s'agit du [MEANetwork](https://network.mean.io). La première chose pour utiliser cette infrastructure est de s'enregistrer via l'outil en ligne de commande :
-```
-mean register
-```
-Une fois enregistré vous pouvez publier un module en vous positionnant dans le dossier du module et en exécutant la commande `publish` :
-```
-cd packages/custom/module
-mean publish
-```
-Lors de la publication d'un module, son code source sera en fait publié sur le service [GitLab](http://git.mean.io) propre au MEANetwork. Pour l'utilisateur nommé 'user' et le module nommé 'package' le dépôt associé sera accessible à l'URL http://git.mean.io/user/package. [GitLab](https://gitlab.com/) est un équivalenet Open Source du service [GitHub]
-(https://github.com/) qui peut être déployé de façon interne.
