@@ -183,7 +183,7 @@ Ainsi le requête GET vers l'URL */api/track* à la Figure 3 va donner une répo
 
 ### Création du menu
 
-Pour rajouter des entrées dans la barre de menu de MEAN.IO il suffit de les déclarer dans votre **app.js** en précisant pour chacune le titre, les rôles autorisés à la voir et l'état à activer côté client (voir ci-après dans la partie cliente) :
+Pour rajouter des entrées dans la barre de menu de MEAN.IO il suffit de les déclarer dans votre **app.js** en précisant pour chacune le titre, les rôles autorisés à la voir et l'état à activer côté client (voir ci-après dans la partie cliente). Dans notre cas nous aurons simplement deux entrées, une pour lister tous nos chemins et une pour créer un nouveau chemin :
 ```javascript
 // Ajout des entrées de menu pour les utilisateurs authentifiés
 Application.menus.add({
@@ -202,9 +202,159 @@ Application.menus.add({
 
 ### Service
 
+La partie service est réellement la plus simple étant donné que le service [$resource](https://docs.angularjs.org/api/ngResource/service/$resource) d'AngularJS est spécifiquement fait pour encapsuler une API de type REST. Pour déclarer notre service d'accès à l'API des chemins il suffit de créer un fichier **TrackService.js** dans le dossier **services** de la partie publique, il contiendra la déclaration suivante :
+```javascript
+// Service utilisé pour accéder à l'API REST des chemins
+angular.module('mean.application').factory('TrackService', ['$resource',
+  function($resource) {
+    return $resource('api/track/:trackId', {
+      articleId: '@_id'
+    }, {
+      update: {
+        method: 'PUT'
+      }
+    });
+  }
+]);
+```
+### Routes
+
+Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet de d'organiser la navigation sous la forme d'une machine à état. Dans la version simple chaque à chaque état est associé une URL, une vue, un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser  :
+```javascript
+'use strict';
+
+// Definition des routes pour les chemins
+angular.module('mean.application').config(['$stateProvider',
+  function($stateProvider) {
+
+    // Page listant tous les chemins de l'utilisateur
+    $stateProvider
+      .state('list tracks', {
+        url: '/tracks',
+        templateUrl: '/application/views/ListTracks.html',
+        controller: 'TrackController',
+        controllerAs: 'controller',
+        resolve: {
+          loggedin: function(MeanUser) {
+            return MeanUser.checkLoggedin();
+          }
+        }
+      })
+      // Page permettant de créer un nouveau chemin
+      .state('create track', {
+        url: '/track/create',
+        templateUrl: '/application/views/CreateTrack.html',
+        controller: 'TrackController',
+        controllerAs: 'controller',
+        resolve: {
+          loggedin: function(MeanUser) {
+            return MeanUser.checkLoggedin();
+          }
+        }
+      })
+      // Page permettant d'éditer un chemin
+      .state('edit track', {
+        url: '/track/:trackId/edit',
+        templateUrl: '/application/views/EditTrack.html',
+        controller: 'TrackController',
+        controllerAs: 'controller',
+        resolve: {
+          loggedin: function(MeanUser) {
+            return MeanUser.checkLoggedin();
+          }
+        }
+      })
+      // Page permettant de voir un chemin
+      .state('view track', {
+        url: '/track/:trackId',
+        templateUrl: '/application/views/ViewTrack.html',
+        controller: 'TrackController',
+        controllerAs: 'controller',
+        resolve: {
+          loggedin: function(MeanUser) {
+            return MeanUser.checkLoggedin();
+          }
+        }
+      });
+  }
+]);
+```
 ### Contrôleur
 
-### Routes
+Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé.
+```
+javascript
+
+'use strict';
+
+// Contrôleur utilisé pour gérer les chemins
+angular.module('mean.application').controller('TrackController', ['$scope', '$stateParams', '$location', 'TrackService', 
+  function($scope, $stateParams, $location, TrackService) {
+	// Créé un nouveau chemin
+    $scope.create = function(isValid) {
+      if (isValid) {
+        var track = new TrackService({
+          title: this.title,
+          description: this.description
+        });
+        track.$save(function(response) {
+          $location.path('track/' + response._id);
+        });
+
+        this.title = '';
+        this.description = '';
+      } else {
+        $scope.submitted = true;
+      }
+    };
+    // Détruit un chemin existant
+    $scope.remove = function(track) {
+      if (track) {
+        track.$remove(function(response) {
+          for (var i in $scope.tracks) {
+            if ($scope.tracks[i] === track) {
+	      $scope.tracks.splice(i,1);
+            }
+          }
+          $location.path('tracks');
+        });
+      } else {
+        $scope.track.$remove(function(response) {
+          $location.path('tracks');
+        });
+      }
+    };
+    // Met à jour un chemin existant
+    $scope.update = function(isValid) {
+      if (isValid) {
+        var track = $scope.track;
+        if(!track.updated) {
+          track.updated = [];
+	}
+        track.$update(function() {
+          $location.path('track/' + track._id);
+        });
+      } else {
+        $scope.submitted = true;
+      }
+    };
+    // Liste tous les chemins de l'utilisateur
+    $scope.find = function() {
+      TrackService.query(function(tracks) {
+        $scope.tracks = tracks;
+      });
+    };
+    //Récupère un chemin via son ID
+    $scope.findOne = function() {
+      TrackService.get({
+        trackId: $stateParams.trackId
+      }, function(track) {
+        $scope.track = track;
+      });
+    };
+  }
+]);
+```
 
 ### Vues
 
