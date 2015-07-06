@@ -208,7 +208,7 @@ La partie service est réellement la plus simple étant donné que le service [$
 angular.module('mean.application').factory('TrackService', ['$resource',
   function($resource) {
     return $resource('api/track/:trackId', {
-      articleId: '@_id'
+      trackId: '@_id'
     }, {
       update: {
         method: 'PUT'
@@ -221,8 +221,6 @@ angular.module('mean.application').factory('TrackService', ['$resource',
 
 Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet de d'organiser la navigation sous la forme d'une machine à état. Dans la version simple chaque à chaque état est associé une URL, une vue, un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser  :
 ```javascript
-'use strict';
-
 // Definition des routes pour les chemins
 angular.module('mean.application').config(['$stateProvider',
   function($stateProvider) {
@@ -233,7 +231,6 @@ angular.module('mean.application').config(['$stateProvider',
         url: '/tracks',
         templateUrl: '/application/views/ListTracks.html',
         controller: 'TrackController',
-        controllerAs: 'controller',
         resolve: {
           loggedin: function(MeanUser) {
             return MeanUser.checkLoggedin();
@@ -245,7 +242,6 @@ angular.module('mean.application').config(['$stateProvider',
         url: '/track/create',
         templateUrl: '/application/views/CreateTrack.html',
         controller: 'TrackController',
-        controllerAs: 'controller',
         resolve: {
           loggedin: function(MeanUser) {
             return MeanUser.checkLoggedin();
@@ -257,7 +253,6 @@ angular.module('mean.application').config(['$stateProvider',
         url: '/track/:trackId/edit',
         templateUrl: '/application/views/EditTrack.html',
         controller: 'TrackController',
-        controllerAs: 'controller',
         resolve: {
           loggedin: function(MeanUser) {
             return MeanUser.checkLoggedin();
@@ -269,7 +264,6 @@ angular.module('mean.application').config(['$stateProvider',
         url: '/track/:trackId',
         templateUrl: '/application/views/ViewTrack.html',
         controller: 'TrackController',
-        controllerAs: 'controller',
         resolve: {
           loggedin: function(MeanUser) {
             return MeanUser.checkLoggedin();
@@ -282,11 +276,7 @@ angular.module('mean.application').config(['$stateProvider',
 ### Contrôleur
 
 Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé.
-```
-javascript
-
-'use strict';
-
+```javascript
 // Contrôleur utilisé pour gérer les chemins
 angular.module('mean.application').controller('TrackController', ['$scope', '$stateParams', '$location', 'TrackService', 
   function($scope, $stateParams, $location, TrackService) {
@@ -313,7 +303,7 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
         track.$remove(function(response) {
           for (var i in $scope.tracks) {
             if ($scope.tracks[i] === track) {
-	      $scope.tracks.splice(i,1);
+	             $scope.tracks.splice(i,1);
             }
           }
           $location.path('tracks');
