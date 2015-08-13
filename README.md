@@ -361,7 +361,7 @@ Dans le domaine il existe de nombreux formats mais les plus usités concernant u
 
 Afin d'optimiser le stockage en base de ces données, nous avons toutefois utilisé un tableau de coordonnées brutes au sein de notre modèle. Pour simplifier le code de conversion nous passeront par un format pivot vers lequel seront transformées les données d'entrée GPX/KML. Afin de disposer d'une API facilement utilisable par des librairies cartographiques, nous souhaitons également utiliser ce format pivot en sortie. Nous focaliserons ainsi nos efforts sur le code de conversion du format pivot vers/depuis notre base de données.
 
-Le format pivot qui s'impose de lui-même pour un code JavaScript est [GeoJSON](http://geojson.org/) (de l'anglais Geographic JSON), qui est un format ouvert d'encodage de données géographiques basé sur la norme JSON (JavaScript Object Notation). Il permet de décrire des données de type point, ligne, polygone, ainsi que des ensembles de ces types de données et d'y ajouter des attributs quelconques. Il est de plus supporté par la plupart des librairies traitant l'information géographique. Enfin, il existe le module Node.js [togeojson](https://github.com/mapbox/togeojson) qui permet de convertir un arbre XML au format KML/GPX en GeoJSON. Il suffit donc de coupler ce module à un module de parsing de flux XML tel que [jsdom](https://github.com/tmpvar/jsdom) pour obtenir très simplement la conversion de nos données d'entrée. Etant donné que ces informations sont volatiles nous utilisons naturellement un attribut virtuel de Mongoose pour ce faire. Ainsi, une fois rajouté les deux dépendances Node.js au **package.json** de notre module MEAN.IO nous insérons le code suivant dans notre modèle pour convertir les données d'entrée :
+Le format pivot qui s'impose de lui-même pour un code JavaScript est [GeoJSON](http://geojson.org/) (de l'anglais Geographic JSON), qui est un format ouvert d'encodage de données géographiques basé sur la norme JSON (JavaScript Object Notation). Il permet de décrire des données de type point, ligne, polygone, ainsi que des ensembles de ces types de données et d'y ajouter des attributs quelconques. Il est de plus supporté par la plupart des librairies traitant l'information géographique. Enfin, il existe le module Node.js [togeojson](https://github.com/mapbox/togeojson) qui permet de convertir un arbre XML au format KML/GPX en GeoJSON. Il suffit donc de coupler ce module à un module de parsing de flux XML tel que [jsdom](https://github.com/tmpvar/jsdom) pour obtenir très simplement la conversion de nos données d'entrée. Etant donné que ces informations sont volatiles nous utilisons naturellement un attribut virtuel de Mongoose (en écriture seulement) pour ce faire. Ainsi, une fois rajouté les deux dépendances Node.js au **package.json** de notre module MEAN.IO nous insérons le code suivant dans notre modèle pour convertir les données d'entrée :
 ```javascript
 var togeojson = require('togeojson'),
     jsdom = require('jsdom').jsdom;
@@ -378,4 +378,51 @@ TrackSchema.virtual('kml')
 // Code identique pour gérer le format GPX
 ...
 ```
+Le code de conversion repose lui-même sur un attribut virtuel permettant de stocker en base les données converties dans notre format pivot (i.e. GeoJSON). Etant donné que nous utilisons ce format également en sortie cet attribut est cette fois en lecture/écriture. Si la conversion vers le GeoJSON est triviale, celle depuis le GeoJSON est un peu plus complexe selon les différents types de données d'entrée, je ne laisse donc ici que le cas le plus simple (voir le code de l'article pour le code complet) :
+```javascript
+// Getter permettant de récupérer le chemin au format GeoJSON
+TrackSchema.virtual('geojson')
+.get(function () {
+  var coordinates = [];
+  // En GeoJSON chaque point est lui-même un tableau alors que nous stockons tout à plat
+  for (var i = 0; i < this.waypoints.length / 3; i++) {
+    coordinates[i] = [ this.waypoints[3*i], this.waypoints[3*i+1], this.waypoints[3*i+2] ];
+  }
+  // Encapsulation des coordonnées dans le formalisme GeoJSON
+  var feature = {
+    "type": "Feature",
+        "geometry": {
+      "type": "LineString",
+      "coordinates": coordinates
+    }
+  };
+  
+  return feature;
+})
+// Setter permettant de remplir le chemin à partir de données au format GeoJSON
+.set(function (geojson) {
+  if ( geojson && geojson.type == 'LineString' ) {
+    // Récupération des coordonnées
+    var coordinates = geojson.coordinates;
+    var waypoints = [];
+    
+    // En GeoJSON chaque point est lui-même un tableau alors que nous stockons tout à plat
+    for (var i = 0; i < coordinates.length; i++) {
+      waypoints[3*i] = coordinates[i][0];
+      waypoints[3*i+1] = coordinates[i][1];
+      // De plus nous stockons toujours l'altitude alors qu'en GeoJSON elle peut être absente
+      if ( coordinates[i].length >= 3 ) {
+        waypoints[3*i+2] = coordinates[i][2];
+      } else {
+        waypoints[3*i+2] = 0;
+      }
+    }
+    
+    this.set( 'waypoints', waypoints );
+  }
+});
+```
+
+> **Trucs & Astuces** : depuis la version 2.4 MongoDB supporte nativement le stockage de données au format GeoJSON (http://docs.mongodb.org/v2.6/reference/geojson/), il serait donc tout à fait possible de stocker directement l'objet GeoJSON pour simplifier
+
 
