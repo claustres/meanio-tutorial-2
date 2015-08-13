@@ -348,4 +348,34 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
 
 ### Vues
 
+**TODO**
+
+## Gestion des données géographiques
+
+A ce stade, nous n'avons aucun moyen d'ingérer dans notre application ce qui nous intéresse finalement le plus, à savoir le chemin qui a été suivi et que l'on souhaite représenter. Comme ce type de données est généralement acquis de façon automatisée (via un GPS) et trop volumineux pour être ingéré manuellement, nous allons créer différentes fonctions permettant de facilement remplir notre base de données avec ces informations.
+
+Dans le domaine il existe de nombreux formats mais les plus usités concernant une trace GPS sont probablement ces deux-là (tous deux basés sur XML) :
+
+ * [GPX](http://www.topografix.com/gpx.asp) (GPS eXchange Format), un format ouvert permettant de décrire une collection de points utilisables sous forme de chemin (waypoint), trace (track) ou itinéraire (route).
+ * [KML](http://www.opengeospatial.org/standards/kml/) (Keyhole Markup Language), un format basé sur [COLLADA](https://www.khronos.org/collada/) et popularisé par Google mais qui est aujourd'hui devenu un standard international.
+
+Afin d'optimiser le stockage en base de ces données, nous avons toutefois utilisé un tableau de coordonnées brutes au sein de notre modèle. Pour simplifier le code de conversion nous passeront par un format pivot vers lequel seront transformées les données d'entrée GPX/KML. Afin de disposer d'une API facilement utilisable par des librairies cartographiques, nous souhaitons également utiliser ce format pivot en sortie. Nous focaliserons ainsi nos efforts sur le code de conversion du format pivot vers/depuis notre base de données.
+
+Le format pivot qui s'impose de lui-même pour un code JavaScript est [GeoJSON](http://geojson.org/) (de l'anglais Geographic JSON), qui est un format ouvert d'encodage de données géographiques basé sur la norme JSON (JavaScript Object Notation). Il permet de décrire des données de type point, ligne, polygone, ainsi que des ensembles de ces types de données et d'y ajouter des attributs quelconques. Il est de plus supporté par la plupart des librairies traitant l'information géographique. Enfin, il existe le module Node.js [togeojson](https://github.com/mapbox/togeojson) qui permet de convertir un arbre XML au format KML/GPX en GeoJSON. Il suffit donc de coupler ce module à un module de parsing de flux XML tel que [jsdom](https://github.com/tmpvar/jsdom) pour obtenir très simplement la conversion de nos données d'entrée. Etant donné que ces informations sont volatiles nous utilisons naturellement un attribut virtuel de Mongoose pour ce faire. Ainsi, une fois rajouté les deux dépendances Node.js au **package.json** de notre module MEAN.IO nous insérons le code suivant dans notre modèle pour convertir les données d'entrée :
+```javascript
+var togeojson = require('togeojson'),
+    jsdom = require('jsdom').jsdom;
+    
+// Setter permettant de remplir le chemin à partir de données au format KML
+TrackSchema.virtual('kml')
+.set(function (data) {
+  if ( data ) {
+    var kml = jsdom(data);
+    var geojson = togeojson.kml(kml);
+    this.set( 'geojson', geojson );
+  }
+});
+// Code identique pour gérer le format GPX
+...
+```
 
