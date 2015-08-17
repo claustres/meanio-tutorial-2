@@ -219,7 +219,7 @@ angular.module('mean.application').factory('TrackService', ['$resource',
 ```
 ### Routes
 
-Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet de d'organiser la navigation sous la forme d'une machine à état. Dans la version simple chaque à chaque état est associé une URL, une vue, un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser  :
+Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet de d'organiser la navigation sous la forme d'une machine à état. Dans la version simple chaque à chaque état est associé une URL, une vue, un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser (via son identifiant de base de données)  :
 ```javascript
 // Definition des routes pour les chemins
 angular.module('mean.application').config(['$stateProvider',
@@ -275,24 +275,31 @@ angular.module('mean.application').config(['$stateProvider',
 ```
 ### Contrôleur
 
-Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé.
+Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé (dans notre cas il n'y a pour l'instant qu'un seul type d'objet : nos chemins). La méthode `find` récupère la liste des chemins existants et `findOne` celui dont l'ID est présent dans l'URL. La méthode `create` est appellée lors de la soumission du formulaire de création d'un chemin, qui a préalablement remplit l'objet `track` du scope. De même pour la méthode `edit`, la seule différence étant que l'objet `track` est dans ce cas préalablement récupéré sur le serveur puis mis à jour. Enfin, la méthode `remove` détruit le chemin fourni en paramètre ou sinon celui en cours d'édition.
 ```javascript
 // Contrôleur utilisé pour gérer les chemins
 angular.module('mean.application').controller('TrackController', ['$scope', '$stateParams', '$location', 'TrackService', 
   function($scope, $stateParams, $location, TrackService) {
-	// Créé un nouveau chemin
+    // Objet par défaut pour le mode création
+    $scope.track = { file: {} };
+    // Créé un nouveau chemin
     $scope.create = function(isValid) {
       if (isValid) {
-        var track = new TrackService({
-          title: this.title,
-          description: this.description
-        });
+        var payload = {
+          title: $scope.track.title,
+          description: $scope.track.description
+        };
+        // Ajout du contenu du fichier si présent
+        if ( $scope.track.file.content ) {
+          payload[$scope.track.file.extension] = $scope.track.file.content;
+        }
+        var track = new TrackService(payload);
         track.$save(function(response) {
-          $location.path('track/' + response._id);
+          $location.path('tracks');
         });
 
-        this.title = '';
-        this.description = '';
+        $scope.track.title = '';
+        $scope.track.description = '';
       } else {
         $scope.submitted = true;
       }
@@ -320,7 +327,7 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
         var track = $scope.track;
         if(!track.updated) {
           track.updated = [];
-	}
+	      }
         track.$update(function() {
           $location.path('track/' + track._id);
         });
@@ -348,7 +355,62 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
 
 ### Vues
 
-**TODO**
+Concernant les vues nous avons tout d'abord besoin d'une présentation sous forme de liste de tous les chemins exitants. Pour ce faire nous utiliserons des [panels](http://getbootstrap.com/components/#panels) Bootstrap. L'en-tête (classe CSS *panel-heading*) contiendra le nom de notre chemin, le pied (classe CSS *panel-footer*) contiendra la date de création et le nom de l'auteur, et le corps (classe CSS *panel-body*) contiendra sa description. Ainsi nous crééons une page permettant d'afficher le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue listant tous les chemins (via un `ng-repeat`), mais aussi dans celle permettant d'afficher les information d'un chemin en particulier via son ID. Pour la création et l'édition la démarche est identique : nous crééons un formulaire permettant d'éditer le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue de création d'une chemin, mais aussi dans celle permettant d'éditer les information d'un chemin en particulier via son ID. La page de visualisation d'un chemin créé dans **public/views/Track.html** se présente ainsi :
+```html
+<!-- Nom du chemin -->
+<div class="panel panel-default">
+  <div class="text-center panel-heading" ng-click="track.isOpen = !track.isOpen">{{track.title}}
+    <!-- Actions associés au chemin -->
+    <a data-ng-click="remove(track); $event.stopPropagation();"><i class="pull-right glyphicon glyphicon-trash" tooltip="Remove track" tooltip-trigger="mouseenter" tooltip-placement="top">&nbsp;</i></a>
+    <a href="/track/{{track._id}}/edit"><i class="pull-right glyphicon glyphicon-edit" tooltip="Edit track" tooltip-trigger="mouseenter" tooltip-placement="top">&nbsp;</i></a>
+  </div>
+  <!-- Description du chemin -->
+  <div collapse="!track.isOpen">
+    <div class="panel-body">
+      {{track.description}}
+    </div>
+    <!-- Date/auteur du chemin -->
+    <div class="panel-footer">
+      <em >Created {{track.created | date:'medium'}} by {{track.user.name}}</em>
+    </div>
+  </div>
+</div>
+```
+Le formulaire d'édition d'un chemin créé dans **public/views/TrackEditor.html** se présente ainsi :
+```html
+<!-- Si l'objet contient déjà unID de base de données alors nous sommes en mode édition, sinon en mode création -->
+<form name="trackForm" class="form-horizontal col-md-6" role="form" data-ng-submit="track._id ? update(trackForm.$valid) : create(trackForm.$valid)" novalidate>
+  <div class="form-group" ng-class="{ 'has-error' : submitted && trackForm.title.$invalid }">
+    <label mean-token="'edit-title'" for="title" class="col-md-2 control-label">Title</label>
+    <div class="col-md-10">
+      <input name="title" type="text" class="form-control" data-ng-model="track.title" id="title" placeholder="Title" required>
+      <div ng-show="submitted && trackForm.title.$invalid" class="help-block">
+        <p ng-show="trackForm.title.$error.required">Title is required</p>
+      </div>
+    </div>
+  </div>
+  <div class="form-group" ng-class="{ 'has-error' : submitted && trackForm.description.$invalid }">
+    <label mean-token="'edit-description'" for="description" class="col-md-2 control-label">Description</label>
+    <div class="col-md-10">
+      <textarea name="description" data-ng-model="track.description" id="description" cols="30" rows="10" placeholder="Description" class="form-control" required></textarea>
+      <div ng-show="submitted && trackForm.description.$invalid" class="help-block">
+        <p ng-show="trackForm.description.$error.required">Description is required</p>
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label mean-token="'edit-file'" for="file" class="col-md-2 control-label">File</label>
+    <div class="col-md-10">
+      <input name="file" type="file" class="form-control" file="track.file" id="file" placeholder="File">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-md-offset-2 col-md-10">
+      <button mean-token="'edit-submit'" type="submit" class="btn btn-default">Submit</button>
+    </div>
+  </div>
+</form>
+```
 
 ## Gestion des données géographiques
 
