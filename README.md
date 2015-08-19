@@ -281,7 +281,7 @@ Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire
 angular.module('mean.application').controller('TrackController', ['$scope', '$stateParams', '$location', 'TrackService', 
   function($scope, $stateParams, $location, TrackService) {
     // Objet par défaut pour le mode création
-    $scope.track = { file: {} };
+    $scope.track = { };
     // Créé un nouveau chemin
     $scope.create = function(isValid) {
       if (isValid) {
@@ -289,10 +289,6 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
           title: $scope.track.title,
           description: $scope.track.description
         };
-        // Ajout du contenu du fichier si présent
-        if ( $scope.track.file.content ) {
-          payload[$scope.track.file.extension] = $scope.track.file.content;
-        }
         var track = new TrackService(payload);
         track.$save(function(response) {
           $location.path('tracks');
@@ -325,9 +321,6 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
     $scope.update = function(isValid) {
       if (isValid) {
         var track = $scope.track;
-        if(!track.updated) {
-          track.updated = [];
-	      }
         track.$update(function() {
           $location.path('track/' + track._id);
         });
@@ -355,12 +348,13 @@ angular.module('mean.application').controller('TrackController', ['$scope', '$st
 
 ### Vues
 
-Concernant les vues nous avons tout d'abord besoin d'une présentation sous forme de liste de tous les chemins exitants. Pour ce faire nous utiliserons des [panels](http://getbootstrap.com/components/#panels) Bootstrap. L'en-tête (classe CSS *panel-heading*) contiendra le nom de notre chemin, le pied (classe CSS *panel-footer*) contiendra la date de création et le nom de l'auteur, et le corps (classe CSS *panel-body*) contiendra sa description. Ainsi nous crééons une page permettant d'afficher le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue listant tous les chemins (via un `ng-repeat`), mais aussi dans celle permettant d'afficher les information d'un chemin en particulier via son ID. Pour la création et l'édition la démarche est identique : nous crééons un formulaire permettant d'éditer le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue de création d'un chemin, mais aussi dans celle permettant d'éditer les information d'un chemin en particulier via son ID. La page de visualisation d'un chemin créé dans **public/views/Track.html** se présente ainsi :
+Concernant les vues nous avons tout d'abord besoin d'une présentation sous forme de liste de tous les chemins exitants. Pour ce faire nous utiliserons des [panels](http://getbootstrap.com/components/#panels) Bootstrap. L'en-tête (classe CSS *panel-heading*) contiendra le nom de notre chemin, le pied (classe CSS *panel-footer*) contiendra la date de création et le nom de l'auteur, et le corps (classe CSS *panel-body*) contiendra sa description. Ainsi nous crééons une page permettant d'afficher le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue listant tous les chemins (via un `ng-repeat`), mais aussi dans celle permettant d'afficher les information d'un chemin en particulier via son ID. Pour la création et l'édition la démarche est identique : nous crééons un formulaire permettant d'éditer le contenu d'un chemin qui sera utilisée (via un `ng-include`) dans la vue de création d'un chemin, mais aussi dans celle permettant d'éditer les information d'un chemin en particulier via son ID. La page de visualisation d'un chemin (Figure 4) créé dans **public/views/Track.html** se présente ainsi :
 ```html
 <!-- Nom du chemin -->
 <div class="panel panel-default">
+  <!-- Un clic sur l'en-tête provoque l'uverture du corps du panneau -->
   <div class="text-center panel-heading" ng-click="track.isOpen = !track.isOpen">{{track.title}}
-    <!-- Actions associés au chemin -->
+    <!-- Actions associés au chemin (delete/edit) -->
     <a data-ng-click="remove(track); $event.stopPropagation();"><i class="pull-right glyphicon glyphicon-trash" tooltip="Remove track" tooltip-trigger="mouseenter" tooltip-placement="top">&nbsp;</i></a>
     <a href="/track/{{track._id}}/edit"><i class="pull-right glyphicon glyphicon-edit" tooltip="Edit track" tooltip-trigger="mouseenter" tooltip-placement="top">&nbsp;</i></a>
   </div>
@@ -379,7 +373,7 @@ Concernant les vues nous avons tout d'abord besoin d'une présentation sous form
 
 ![Figure 4](Figure4.png "Figure 4 : vue listant les chemins et le détail d'un chemin sélectionné")
 
-Le formulaire d'édition d'un chemin créé dans **public/views/TrackEditor.html** se présente ainsi :
+Le formulaire d'édition d'un chemin (Figure 5) créé dans **public/views/TrackEditor.html** se présente ainsi :
 ```html
 <!-- Si l'objet contient déjà unID de base de données alors nous sommes en mode édition, sinon en mode création -->
 <form name="trackForm" class="form-horizontal col-md-6" role="form" data-ng-submit="track._id ? update(trackForm.$valid) : create(trackForm.$valid)" novalidate>
@@ -505,6 +499,6 @@ Il ne nous reste plus qu'à permettre à l'utilisateur de fournir un fichier KML
 
 ## Conclusion
 
-Cet article a été l'occassion d'approfondir votre connaissance du framework MEAN.IO qui vous avez été présenté succinctement lors du précédent article. Tout d'abord par la mise en place d'un nouveau module, ensuite par la création d'un modèle de données et de l'API REST permettant de le manipuler, enfin par une partie cliente incluant des interfaces homme-machine (IHM) pour la présentation et l'édition des données. Lors du prochain épisode nous terminerons en beauté avec la visualisation de nos chemins sous forme de cartes à la façon "Google Maps" ou de vues 3D à la façon "Google Earth".
+Cet article a été l'occassion d'approfondir votre connaissance du framework MEAN.IO qui vous avez été présenté succinctement lors du précédent article. Tout d'abord par la mise en place d'un nouveau module, ensuite par la création d'un modèle de données et de l'API REST permettant de le manipuler, enfin par une partie cliente incluant des interfaces homme-machine (IHM) pour la présentation et l'édition des données. Lors du prochain épisode nous terminerons en beauté avec la visualisation de nos chemins sous formes de cartes à la façon "Google Maps" ou de vues 3D à la façon "Google Earth".
 
 
