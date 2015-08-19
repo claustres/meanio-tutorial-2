@@ -134,7 +134,7 @@ mongoose.model('Track', TrackSchema);
 
 ### Création des routes
 
-Une fois le modèle créé, la seconde étape consiste à définir l'API REST qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellemnt d'autres opérations plus spécifiques à votre modèle. Une route consiste à associer un point d'entrée de l'API (i.e. une URL avec une méthode HTTP) à la fonction de traitement JavaScript associée au sein d'un contrôleur. Pour déclarer les routes il suffit donc de créer un fichier **TrackRoutes.js** dans le dossier **routes** du module, il contiendra le code suivant :
+Une fois le modèle créé, la seconde étape consiste à définir l'API REST qui permettra de le manipuler via les classiques opérations CRUD (création, lecture, mise à jour et destruction) et éventuellement d'autres opérations plus spécifiques à votre modèle. Une route consiste à associer un point d'entrée de l'API (i.e. une URL avec une méthode HTTP) à la fonction de traitement JavaScript associée au sein d'un contrôleur. Pour déclarer les routes il suffit donc de créer un fichier **TrackRoutes.js** dans le dossier **routes** du module, il contiendra le code suivant :
 ```javascript
 'use strict';
 
@@ -165,7 +165,7 @@ module.exports = function(Application, app, auth, database) {
     app.param('trackId', track.findById);
 };
 ```
-On note l'ajout d'une fonction d'autorisation spécifique à notre modèle car seul l'utilisateur qui a créé un chemin est autorisé à le modifier. On notera également l'appel à des fonctions de vérification d'authentification de l'utilisateur ou de validité de l'identifiant d'un chemin qui sont fournies par MEAN.IO.
+On note l'ajout d'une fonction d'autorisation (middleware Express) spécifique à notre modèle car seul l'utilisateur qui a créé un chemin est autorisé à le modifier. On notera également l'appel à des fonctions de vérification d'authentification de l'utilisateur ou de validité de l'identifiant d'un chemin qui sont fournies par MEAN.IO.
 
 ### Test de l'API
 
@@ -219,7 +219,7 @@ angular.module('mean.application').factory('TrackService', ['$resource',
 ```
 ### Routes
 
-Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet de d'organiser la navigation sous la forme d'une machine à état. Dans la version simple chaque à chaque état est associé une URL, une vue, un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser (via son identifiant de base de données)  :
+Les routes côté front-end sont gérées via l'[AngularUI Router](https://github.com/angular-ui/ui-router). Ce module permet d'organiser la navigation sous la forme d'une machine à état. Dans la version simple à chaque état est associé une URL, une vue, et un contrôleur. Dans la version plus complexe il est possible d'imbriquer les machines à état. Pour déclarer les routes il suffit de créer un fichier **ApplicationRoutes.js** dans le dossier **routes** de la partie publique, il contiendra dans notre cas les déclarations permettant d'accéder aux pages pour lister nos chemins, créer un nouveau chemin, éditer un chemin et le visualiser (via son identifiant de base de données)  :
 ```javascript
 // Definition des routes pour les chemins
 angular.module('mean.application').config(['$stateProvider',
@@ -275,7 +275,7 @@ angular.module('mean.application').config(['$stateProvider',
 ```
 ### Contrôleur
 
-Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé (dans notre cas il n'y a pour l'instant qu'un seul type d'objet : nos chemins). La méthode `find` récupère la liste des chemins existants et `findOne` celui dont l'ID est présent dans l'URL. La méthode `create` est appellée lors de la soumission du formulaire de création d'un chemin, qui a préalablement remplit l'objet `track` du scope. De même pour la méthode `edit`, la seule différence étant que l'objet `track` est dans ce cas préalablement récupéré sur le serveur puis mis à jour. Enfin, la méthode `remove` détruit le chemin fourni en paramètre ou sinon celui en cours d'édition. Toutes ces méthodes seront appellées par les différentes vues de l'application.
+Notre contrôleur sera un contrôleur AngularJS classique mais nous allons faire en sorte qu'il gère les actions nécessaires à tous les états se rapportant aux chemins pour centraliser le comportement par type d'objet manipulé (dans notre cas il n'y a pour l'instant qu'un seul type d'objet). La méthode `find` récupère côté serveur la liste des chemins existants et `findOne` celui dont l'ID est présent dans l'URL. La méthode `create` est appellée lors de la soumission du formulaire de création d'un chemin, qui a préalablement remplit l'objet `track` du scope. De même pour la méthode `edit`, la seule différence étant que l'objet `track` est dans ce cas préalablement récupéré sur le serveur puis mis à jour. Enfin, la méthode `remove` détruit le chemin fourni en paramètre ou sinon celui en cours d'édition. Toutes ces méthodes seront appellées par les différentes vues de l'application.
 ```javascript
 // Contrôleur utilisé pour gérer les chemins
 angular.module('mean.application').controller('TrackController', ['$scope', '$stateParams', '$location', 'TrackService', 
@@ -440,7 +440,7 @@ TrackSchema.virtual('kml')
 // Code identique pour gérer le format GPX
 ...
 ```
-Le code de conversion repose lui-même sur un attribut virtuel permettant de stocker en base les données converties dans notre format pivot (i.e. GeoJSON). Etant donné que nous utilisons ce format également en sortie cet attribut est cette fois en lecture/écriture. Si la conversion vers le GeoJSON est triviale, celle depuis le GeoJSON est un peu plus complexe selon les différents types de données d'entrée, je ne laisse donc ici que le cas le plus simple (voir le code de l'article pour le code complet) :
+Le code de conversion repose lui-même sur un attribut virtuel permettant de stocker en base les données converties dans notre format pivot (i.e. GeoJSON). Etant donné que nous utilisons ce format également en sortie cet attribut est cette fois en lecture/écriture. Si la conversion vers le GeoJSON est triviale, celle depuis le GeoJSON est un peu plus complexe selon les différents types de données d'entrée, je ne laisse donc ici que le cas le plus simple (voir le code de l'article pour l'exemple complet) :
 ```javascript
 // Getter permettant de récupérer le chemin au format GeoJSON
 TrackSchema.virtual('geojson')
@@ -485,6 +485,6 @@ TrackSchema.virtual('geojson')
 });
 ```
 
-> **Trucs & Astuces** : depuis la version 2.4 MongoDB supporte nativement le stockage de données au format GeoJSON (http://docs.mongodb.org/v2.6/reference/geojson/), il serait donc tout à fait possible de stocker directement l'objet GeoJSON pour simplifier
+> **Trucs & Astuces** : depuis la version 2.4 MongoDB supporte nativement le stockage de données au format GeoJSON (http://docs.mongodb.org/v2.6/reference/geojson/), il serait donc tout à fait possible de stocker directement l'objet GeoJSON pour simplifier la manipulation mais en complexifiant la structure de données
 
-
+Il ne nous reste plus qu'à permettre à l'utilisateur de fournir un fichier KML ou GPX afin d'alimenter notre base de données. Dans une application réelle le fichier serait tout d'abord transféré sur le serveur puis traité côté serveur afin d'optimiser la bande passante et de s'affranchir des limites de taille. Néanmoins, dans l'optique de simplifier notre exemple, nous allons lire le fichier côté client et envoyer directement les données lues avec la requête de création ou d'édition du chemin. Ainsi, seule la conversion en GeoJSON se réalisera côté serveur. Grâce aux attributs virtuels de notre modèle il suffit de rajouter une propriété `kml` ou `gpx` au contenu de notre requête pour que la magie opère !
