@@ -376,6 +376,9 @@ Concernant les vues nous avons tout d'abord besoin d'une présentation sous form
   </div>
 </div>
 ```
+
+![Figure 4](Figure4.png "Figure 4 : vue listant les chemins et le détail d'un chemin sélectionné")
+
 Le formulaire d'édition d'un chemin créé dans **public/views/TrackEditor.html** se présente ainsi :
 ```html
 <!-- Si l'objet contient déjà unID de base de données alors nous sommes en mode édition, sinon en mode création -->
@@ -411,6 +414,8 @@ Le formulaire d'édition d'un chemin créé dans **public/views/TrackEditor.html
   </div>
 </form>
 ```
+
+![Figure 5](Figure5.png "Figure 5 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
 
 ## Gestion des données géographiques
 
@@ -487,4 +492,19 @@ TrackSchema.virtual('geojson')
 
 > **Trucs & Astuces** : depuis la version 2.4 MongoDB supporte nativement le stockage de données au format GeoJSON (http://docs.mongodb.org/v2.6/reference/geojson/), il serait donc tout à fait possible de stocker directement l'objet GeoJSON pour simplifier la manipulation mais en complexifiant la structure de données
 
-Il ne nous reste plus qu'à permettre à l'utilisateur de fournir un fichier KML ou GPX afin d'alimenter notre base de données. Dans une application réelle le fichier serait tout d'abord transféré sur le serveur puis traité côté serveur afin d'optimiser la bande passante et de s'affranchir des limites de taille. Néanmoins, dans l'optique de simplifier notre exemple, nous allons lire le fichier côté client et envoyer directement les données lues avec la requête de création ou d'édition du chemin. Ainsi, seule la conversion en GeoJSON se réalisera côté serveur. Grâce aux attributs virtuels de notre modèle il suffit de rajouter une propriété `kml` ou `gpx` au contenu de notre requête pour que la magie opère !
+Il ne nous reste plus qu'à permettre à l'utilisateur de fournir un fichier KML ou GPX afin d'alimenter notre base de données. Dans une application réelle le fichier serait tout d'abord transféré sur le serveur puis traité côté serveur afin d'optimiser la bande passante et de s'affranchir des limites de taille. Néanmoins, dans l'optique de simplifier notre exemple, nous allons lire le fichier côté client et envoyer directement les données lues avec la requête de création ou d'édition du chemin. Ainsi, seule la conversion en GeoJSON se réalisera côté serveur. Grâce aux attributs virtuels de notre modèle il suffit de rajouter une propriété `kml` ou `gpx` au contenu de notre requête pour que la magie opère ! Pour faire cela simplement j'ai créé une directive AngularJS (voir code complet de l'article) qui à chaque changement dans le sélecteur de fichier de notre formulaire va récupérer le nom et le contenu du fichier sélectionné dans la propriété `file` (qui est en fait un objet) du chemin courant. Cette directive se base sur la nouvelle [File API](http://www.w3.org/TR/file-upload/) d'HTML5. Au niveau du contrôleur l'ajout du contenu du fichier dans la propriété adéquate de note modèle (`kml` ou `gpx`) se base sur l'extension du fichier lu:
+```javascript
+...
+    var track = $scope.track;
+    // Ajout du contenu du fichier si présent
+    if ( track.file.content ) {
+      track[track.file.extension] = track.file.content;
+    }
+...
+```
+
+## Conclusion
+
+Cet article a été l'occassion d'approfondir votre connaissance du framework MEAN.IO qui vous avez été présenté succinctement lors du précédent article. Tout d'abord par la mise en place d'un nouveau module, ensuite par la création d'un modèle de données et de l'API REST permettant de le manipuler, enfin par une partie cliente incluant des interfaces homme-machine (IHM) pour la présentation et l'édition des données. Lors du prochain épisode nous terminerons en beauté avec la visualisation de nos chemins sous forme de cartes à la façon "Google Maps" ou de vues 3D à la façon "Google Earth".
+
+
